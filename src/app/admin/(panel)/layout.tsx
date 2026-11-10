@@ -3,7 +3,7 @@ import { connection } from "next/server";
 import { Suspense } from "react";
 
 import { LogoutButton } from "@/components/admin/logout-button";
-import { prisma } from "@/lib/prisma";
+import { countUnreadMessages } from "@/lib/db";
 import { requireAdmin } from "@/lib/session";
 
 const links = [
@@ -15,7 +15,7 @@ const links = [
 async function UnreadBadge() {
   await connection();
   await requireAdmin();
-  const count = await prisma.contactMessage.count({ where: { isRead: false } });
+  const count = await countUnreadMessages();
   if (count === 0) return null;
   return <span className="rounded-full bg-gold px-2 py-0.5 text-xs font-bold text-ink">{count}</span>;
 }

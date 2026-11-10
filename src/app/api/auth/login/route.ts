@@ -4,7 +4,7 @@ import { cookies } from "next/headers";
 
 import { clientIp, isSameOrigin, rateLimit } from "@/lib/http";
 import { SESSION_COOKIE, sessionCookieOptions, signAdminToken } from "@/lib/jwt";
-import { prisma } from "@/lib/prisma";
+import { findAdminByEmail } from "@/lib/db";
 
 let dummyHash: string | null = null;
 
@@ -37,7 +37,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const admin = await prisma.admin.findUnique({ where: { email } });
+    const admin = await findAdminByEmail(email);
     const matches = await comparePassword(password, admin?.passwordHash ?? null);
     if (!admin || !matches) {
       return NextResponse.json({ ok: false, error: "INVALID_LOGIN" }, { status: 401 });

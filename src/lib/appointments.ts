@@ -1,9 +1,8 @@
 import "server-only";
 
-import { Prisma } from "@prisma/client";
-
 import { activeSlotKey } from "@/lib/booking";
-import { prisma } from "@/lib/prisma";
+import { countAppointments, findAppointment, insertAppointment, listAppointments, saveAppointment } from "@/lib/db";
+import { isUniqueViolation } from "@/lib/d1";
 import { makeReference } from "@/lib/reference";
 import { ammanDayStart } from "@/lib/time";
 import type { AppointmentStatus, Locale } from "@/lib/types";
@@ -26,44 +25,29 @@ type CreateAppointmentInput = {
   locale: Locale;
 };
 
-function uniqueTarget(error: unknown): string | null {
-  if (!(error instanceof Prisma.PrismaClientKnownRequestError) || error.code !== "P2002") {
-    return null;
-  }
-  const target = error.meta?.target;
-  if (Array.isArray(target)) return target.join(",").toLowerCase();
-  return typeof target === "string" ? target.toLowerCase() : "";
-}
-
 export async function countRecentBookings(phone: string, now = new Date()) {
-  return prisma.appointment.count({
-    where: { phone, createdAt: { gte: ammanDayStart(now) } },
-  });
+  return countAppointments({ phone, createdSince: ammanDayStart(now) });
 }
 
 export async function createAppointment(input: CreateAppointmentInput) {
   for (let attempt = 0; attempt < 5; attempt += 1) {
     try {
-      return await prisma.appointment.create({
-        data: {
-          reference: makeReference(),
-          patientName: input.patientName,
-          phone: input.phone,
-          serviceSlug: input.serviceSlug,
-          serviceName: input.serviceNameAr,
-          date: input.date,
-          time: input.time,
-          notes: input.notes,
-          locale: input.locale,
-          status: "PENDING",
-          activeSlot: "active",
-        },
+      return await insertAppointment({
+        reference: makeReference(),
+        patientName: input.patientName,
+        phone: input.phone,
+        serviceSlug: input.serviceSlug,
+        serviceName: input.serviceNameAr,
+        date: input.date,
+        time: input.time,
+        notes: input.notes,
+        locale: input.locale,
       });
     } catch (error) {
-      const target = uniqueTarget(error);
-      if (target?.includes("reference")) continue;
-      if (target !== null) throw new SlotTakenError();
-      throw error;
+      if (!isUniqueViolation(error)) throw error;
+      const message = error instanceof Error ? error.message.toLowerCase() : "";
+      if (message.includes("reference")) continue;
+      throw new SlotTakenError();
     }
   }
 
@@ -71,10 +55,7 @@ export async function createAppointment(input: CreateAppointmentInput) {
 }
 
 export async function listTakenSlots(date: string) {
-  const rows = await prisma.appointment.findMany({
-    where: { date, activeSlot: "active" },
-    select: { time: true },
-  });
+  const rows = await listAppointments({ date, activeSlot: "active" }, "schedule", 0, 48);
   return rows.map((row) => row.time);
 }
 
@@ -82,23 +63,19 @@ export async function updateAppointment(
   id: string,
   changes: { status?: AppointmentStatus; staffNote?: string | null },
 ) {
-  const current = await prisma.appointment.findUnique({ where: { id } });
+  const current = await findAppointment(id);
   if (!current) return null;
 
   const status = changes.status ?? current.status;
-  const data: Prisma.AppointmentUpdateInput = {
-    status,
-    activeSlot: activeSlotKey(status, current.id),
-  };
-
-  if (changes.staffNote !== undefined) {
-    data.staffNote = changes.staffNote;
-  }
 
   try {
-    return await prisma.appointment.update({ where: { id }, data });
+    return await saveAppointment(id, {
+      status,
+      activeSlot: activeSlotKey(status, current.id),
+      staffNote: changes.staffNote,
+    });
   } catch (error) {
-    if (uniqueTarget(error) !== null) throw new SlotTakenError();
+    if (isUniqueViolation(error)) throw new SlotTakenError();
     throw error;
   }
 }

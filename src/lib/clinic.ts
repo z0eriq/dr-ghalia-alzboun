@@ -13,23 +13,26 @@ export const clinic = {
   localityAr: "الضليل",
   localityEn: "Al-Dulail",
   country: "JO",
+  mapsUrl: "https://maps.app.goo.gl/zWVXnQ3yvrCA9dGN7?g_st=ic",
+  latitude: 32.1107118,
+  longitude: 36.2568992,
   hoursAr: "يوميًا من 10:00 صباحًا حتى 8:00 مساءً",
   hoursEn: "Daily, 10:00 AM to 8:00 PM",
   openLabel: "10:00",
   closeLabel: "20:00",
-  mapsQuery: "صيدلية مزبار الضليل",
   timezone: "Asia/Amman",
   bookingWindowDays: 60,
   slotMinutes: 30,
 } as const;
 
 export function mapsSearchUrl() {
-  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(clinic.mapsQuery)}`;
+  return clinic.mapsUrl;
 }
 
 export function mapsEmbedUrl(locale: "ar" | "en") {
   const language = locale === "ar" ? "ar" : "en";
-  return `https://maps.google.com/maps?q=${encodeURIComponent(clinic.mapsQuery)}&hl=${language}&z=16&output=embed`;
+  const place = "عيادة الدكتوره غاليه الزبون, Dhlail, Jordan";
+  return `https://maps.google.com/maps?q=${encodeURIComponent(place)}&hl=${language}&z=17&output=embed`;
 }
 
 export function siteUrl() {

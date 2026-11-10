@@ -43,7 +43,7 @@ export default async function AboutPage({ params }: { params: Promise<{ locale: 
       </ul>
       <dl className="mt-10 grid gap-4 sm:grid-cols-3">
         <Fact label={dict.hero.hoursLabel} value={raw === "ar" ? clinic.hoursAr : clinic.hoursEn} />
-        <Fact label={dict.hero.placeLabel} value={raw === "ar" ? clinic.addressAr : clinic.addressEn} />
+        <Fact label={dict.hero.placeLabel} value={raw === "ar" ? clinic.addressAr : clinic.addressEn} href={clinic.mapsUrl} />
         <Fact label={dict.hero.phoneLabel} value={clinic.phoneDisplay} />
       </dl>
       <Link href={localePath(raw, "/book")} className="mt-8 inline-flex min-h-12 items-center rounded-full bg-gold px-6 text-sm font-bold text-ink">
@@ -53,11 +53,19 @@ export default async function AboutPage({ params }: { params: Promise<{ locale: 
   );
 }
 
-function Fact({ label, value }: { label: string; value: string }) {
+function Fact({ label, value, href }: { label: string; value: string; href?: string }) {
   return (
     <div className="rounded-3xl bg-ink px-4 py-5 text-ivory">
       <dt className="text-xs font-bold text-gold-bright">{label}</dt>
-      <dd className="mt-2 text-sm font-semibold leading-6">{value}</dd>
+      <dd className="mt-2 text-sm font-semibold leading-6">
+        {href ? (
+          <a href={href} target="_blank" rel="noopener noreferrer" className="underline-offset-4 hover:text-gold-bright hover:underline">
+            {value}
+          </a>
+        ) : (
+          value
+        )}
+      </dd>
     </div>
   );
 }

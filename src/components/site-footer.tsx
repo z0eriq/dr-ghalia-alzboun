@@ -26,9 +26,14 @@ export function SiteFooter({ locale, dict }: { locale: Locale; dict: Dictionary 
             className="h-36 w-auto sm:h-40"
             style={{ width: "auto", height: "9rem" }}
           />
-          <p className="mt-4 max-w-sm text-sm leading-7 text-ivory/75">
+          <a
+            href={clinic.mapsUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-4 block max-w-sm text-sm leading-7 text-ivory/75 underline-offset-4 hover:text-ivory hover:underline"
+          >
             {locale === "ar" ? clinic.addressAr : clinic.addressEn}
-          </p>
+          </a>
         </div>
         <nav aria-label={dict.footer.nav}>
           <h2 className="font-latin text-sm tracking-[0.22em] text-gold-bright">{dict.footer.nav}</h2>

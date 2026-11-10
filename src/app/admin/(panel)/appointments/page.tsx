@@ -1,9 +1,8 @@
 import Link from "next/link";
 import { connection } from "next/server";
-import type { Prisma } from "@prisma/client";
 
 import { AppointmentBoard } from "@/components/admin/appointment-board";
-import { prisma } from "@/lib/prisma";
+import { countAppointments, listAppointments, type AppointmentFilter } from "@/lib/db";
 import { requireAdmin } from "@/lib/session";
 import { todayInAmman } from "@/lib/time";
 import type { AppointmentDto, AppointmentStatus, Locale } from "@/lib/types";
@@ -45,33 +44,22 @@ export default async function AppointmentsPage({
   const pageSize = 12;
   const today = todayInAmman();
 
-  const where: Prisma.AppointmentWhereInput = {};
+  const where: AppointmentFilter = {};
   if (view === "pending") where.status = "PENDING";
   else if (view === "today") {
     where.date = today;
-    where.status = { not: "CANCELLED" };
+    where.statusNot = "CANCELLED";
   } else if (view === "cancelled") where.status = "CANCELLED";
   else if (view === "upcoming") {
-    where.date = { gte: today };
-    where.status = { in: ["PENDING", "CONFIRMED"] };
+    where.dateFrom = today;
+    where.status = ["PENDING", "CONFIRMED"];
   }
 
-  if (query) {
-    where.OR = [
-      { patientName: { contains: query } },
-      { phone: { contains: query } },
-      { reference: { contains: query } },
-    ];
-  }
+  if (query) where.search = query;
 
   const [total, rows] = await Promise.all([
-    prisma.appointment.count({ where }),
-    prisma.appointment.findMany({
-      where,
-      orderBy: view === "all" || view === "cancelled" ? [{ createdAt: "desc" }] : [{ date: "asc" }, { time: "asc" }],
-      skip: (page - 1) * pageSize,
-      take: pageSize,
-    }),
+    countAppointments(where),
+    listAppointments(where, view === "all" || view === "cancelled" ? "newest" : "schedule", (page - 1) * pageSize, pageSize),
   ]);
 
   const appointments: AppointmentDto[] = rows.map((row) => ({

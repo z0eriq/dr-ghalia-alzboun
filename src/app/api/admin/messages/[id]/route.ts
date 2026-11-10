@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { isSameOrigin } from "@/lib/http";
-import { prisma } from "@/lib/prisma";
+import { setMessageRead } from "@/lib/db";
 import { readAdminSession } from "@/lib/session";
 
 export async function PATCH(request: Request, context: { params: Promise<{ id: string }> }) {
@@ -29,8 +29,9 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
   }
 
   try {
-    const updated = await prisma.contactMessage.update({ where: { id }, data: { isRead } });
-    return NextResponse.json({ ok: true, isRead: updated.isRead });
+    const updated = await setMessageRead(id, isRead);
+    if (updated === null) return NextResponse.json({ ok: false, error: "NOT_FOUND" }, { status: 404 });
+    return NextResponse.json({ ok: true, isRead: updated });
   } catch {
     return NextResponse.json({ ok: false, error: "NOT_FOUND" }, { status: 404 });
   }

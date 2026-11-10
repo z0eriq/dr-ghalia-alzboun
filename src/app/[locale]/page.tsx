@@ -2,10 +2,11 @@ import Link from "next/link";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 
+import { ClinicMap } from "@/components/clinic-map";
 import { GoldRule } from "@/components/gold-rule";
 import { getDictionary, isLocale, localePath } from "@/content/dictionary";
 import { localizedServices } from "@/content/services";
-import { clinic, mapsEmbedUrl, mapsSearchUrl } from "@/lib/clinic";
+import { clinic, mapsSearchUrl } from "@/lib/clinic";
 import { clinicInquiryLink } from "@/lib/whatsapp";
 
 export default async function HomePage({ params }: { params: Promise<{ locale: string }> }) {
@@ -53,7 +54,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
       <section className="relative z-10 mx-auto -mt-8 w-full max-w-6xl px-5" aria-label={dict.visit.eyebrow}>
         <dl className="grid overflow-hidden rounded-3xl border border-stone bg-paper shadow-sm md:grid-cols-3">
           <InfoItem label={dict.hero.hoursLabel} value={hours} />
-          <InfoItem label={dict.hero.placeLabel} value={place} />
+          <InfoItem label={dict.hero.placeLabel} value={place} href={clinic.mapsUrl} external />
           <InfoItem label={dict.hero.phoneLabel} value={clinic.phoneDisplay} href={`tel:${clinic.phoneE164}`} />
         </dl>
       </section>
@@ -108,13 +109,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
             {dict.visit.directions}
           </a>
         </div>
-        <iframe
-          title={dict.visit.map}
-          src={mapsEmbedUrl(raw)}
-          className="min-h-72 w-full rounded-3xl border border-stone"
-          loading="lazy"
-          referrerPolicy="no-referrer-when-downgrade"
-        />
+        <ClinicMap locale={raw} title={dict.visit.map} />
       </section>
 
       <section className="mx-auto w-full max-w-6xl px-5 pb-24">
@@ -130,13 +125,29 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
   );
 }
 
-function InfoItem({ label, value, href }: { label: string; value: string; href?: string }) {
+function InfoItem({
+  label,
+  value,
+  href,
+  external = false,
+}: {
+  label: string;
+  value: string;
+  href?: string;
+  external?: boolean;
+}) {
   return (
     <div className="border-b border-stone px-5 py-5 last:border-b-0 md:border-b-0 md:border-e">
       <dt className="text-xs font-bold tracking-wide text-gold-deep">{label}</dt>
       <dd className="mt-2 text-base font-semibold leading-7">
         {href ? (
-          <a href={href} dir="ltr" className="inline-block hover:text-gold-deep">
+          <a
+            href={href}
+            dir={external ? undefined : "ltr"}
+            target={external ? "_blank" : undefined}
+            rel={external ? "noopener noreferrer" : undefined}
+            className="inline-block underline-offset-4 hover:text-gold-deep hover:underline"
+          >
             {value}
           </a>
         ) : (

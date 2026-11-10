@@ -1,14 +1,14 @@
 import { connection } from "next/server";
 
 import { MessageList } from "@/components/admin/message-list";
-import { prisma } from "@/lib/prisma";
+import { listMessages } from "@/lib/db";
 import { requireAdmin } from "@/lib/session";
 import type { ContactMessageDto } from "@/lib/types";
 
 export default async function MessagesPage() {
   await connection();
   await requireAdmin();
-  const rows = await prisma.contactMessage.findMany({ orderBy: { createdAt: "desc" }, take: 100 });
+  const rows = await listMessages(100);
   const messages: ContactMessageDto[] = rows.map((row) => ({
     id: row.id,
     name: row.name,

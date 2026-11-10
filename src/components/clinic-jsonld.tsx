@@ -21,6 +21,12 @@ export function ClinicJsonLd() {
       opens: "10:00",
       closes: "20:00",
     },
+    hasMap: clinic.mapsUrl,
+    geo: {
+      "@type": "GeoCoordinates",
+      latitude: clinic.latitude,
+      longitude: clinic.longitude,
+    },
     sameAs: [clinic.instagram],
   };
 

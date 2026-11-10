@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { connection } from "next/server";
 
-import { prisma } from "@/lib/prisma";
+import { countAppointments, countUnreadMessages, listAppointments } from "@/lib/db";
 import { requireAdmin } from "@/lib/session";
 import { formatTime, todayInAmman } from "@/lib/time";
 
@@ -18,14 +18,11 @@ export default async function AdminHomePage() {
   await requireAdmin();
   const today = todayInAmman();
   const [pending, todayCount, confirmed, todayRows, unread] = await Promise.all([
-    prisma.appointment.count({ where: { status: "PENDING" } }),
-    prisma.appointment.count({ where: { date: today, status: { not: "CANCELLED" } } }),
-    prisma.appointment.count({ where: { date: { gte: today }, status: "CONFIRMED" } }),
-    prisma.appointment.findMany({
-      where: { date: today, status: { not: "CANCELLED" } },
-      orderBy: { time: "asc" },
-    }),
-    prisma.contactMessage.count({ where: { isRead: false } }),
+    countAppointments({ status: "PENDING" }),
+    countAppointments({ date: today, statusNot: "CANCELLED" }),
+    countAppointments({ dateFrom: today, status: "CONFIRMED" }),
+    listAppointments({ date: today, statusNot: "CANCELLED" }, "schedule", 0, 48),
+    countUnreadMessages(),
   ]);
 
   return (

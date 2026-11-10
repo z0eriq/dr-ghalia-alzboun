@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { validateContact } from "@/lib/booking";
 import { clinic } from "@/lib/clinic";
 import { clientIp, isSameOrigin, rateLimit } from "@/lib/http";
-import { prisma } from "@/lib/prisma";
+import { createMessage } from "@/lib/db";
 import { clinicInquiryLink, whatsAppLink } from "@/lib/whatsapp";
 
 export async function POST(request: Request) {
@@ -31,7 +31,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    await prisma.contactMessage.create({ data: parsed.data });
+    await createMessage(parsed.data);
     const text = [
       "السلام عليكم، رسالة من موقع عيادة الدكتورة غالية الزبون.",
       "",
