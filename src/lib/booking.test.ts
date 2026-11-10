@@ -90,12 +90,17 @@ describe("WhatsApp links", () => {
       patientName: "ليلى",
       phone: "0791111111",
       serviceName: "تنظيف وتلميع الأسنان",
-      dateLabel: "الخميس",
-      timeLabel: "11:00 ص",
-      notes: null,
+      date: "2026-11-12",
+      time: "11:00",
+      notes: "أفضّل موعدًا هادئًا",
     });
     const link = whatsAppLink("0791853391", message);
     expect(link.startsWith("https://wa.me/962791853391?text=")).toBe(true);
-    expect(decodeURIComponent(link)).toContain("GA-1234");
+    const text = decodeURIComponent(link.split("text=")[1] ?? "");
+    expect(text).toContain("\u200Fرقم الطلب: \u2066GA-1234\u2069");
+    expect(text).toContain("\u200Fالهاتف: \u20660791111111\u2069");
+    expect(text).toContain("\u200Fالوقت: \u206611:00\u2069");
+    expect(text).toContain("الخميس، \u206612\u2069 تشرين الثاني \u20662026\u2069");
+    expect(text).toContain("\u200Fملاحظات: \u2067أفضّل موعدًا هادئًا\u2069");
   });
 });

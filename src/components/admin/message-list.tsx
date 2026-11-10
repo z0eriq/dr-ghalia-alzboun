@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 
 import { formatDateTime } from "@/lib/time";
 import type { ContactMessageDto } from "@/lib/types";
-import { whatsAppLink } from "@/lib/whatsapp";
+import { patientReply, whatsAppLink } from "@/lib/whatsapp";
 
 export function MessageList({ messages }: { messages: ContactMessageDto[] }) {
   const router = useRouter();
@@ -41,7 +41,7 @@ export function MessageList({ messages }: { messages: ContactMessageDto[] }) {
           <p className="mt-4 leading-8">{message.message}</p>
           <div className="mt-4 flex flex-wrap gap-2">
             <a
-              href={whatsAppLink(message.phone, `السلام عليكم ${message.name}، معكم عيادة الدكتورة غالية الزبون بخصوص رسالتكم.`)}
+              href={whatsAppLink(message.phone, patientReply(message.name))}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex min-h-10 items-center rounded-full bg-[#1f7a43] px-4 text-sm font-bold text-white"

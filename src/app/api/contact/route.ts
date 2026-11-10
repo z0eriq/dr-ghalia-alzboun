@@ -4,7 +4,7 @@ import { validateContact } from "@/lib/booking";
 import { clinic } from "@/lib/clinic";
 import { clientIp, isSameOrigin, rateLimit } from "@/lib/http";
 import { createMessage } from "@/lib/db";
-import { clinicInquiryLink, whatsAppLink } from "@/lib/whatsapp";
+import { clinicInquiryLink, contactMessage, whatsAppLink } from "@/lib/whatsapp";
 
 export async function POST(request: Request) {
   if (!isSameOrigin(request)) {
@@ -32,17 +32,9 @@ export async function POST(request: Request) {
 
   try {
     await createMessage(parsed.data);
-    const text = [
-      "السلام عليكم، رسالة من موقع عيادة الدكتورة غالية الزبون.",
-      "",
-      `الاسم: ${parsed.data.name}`,
-      `الهاتف: ${parsed.data.phone}`,
-      `الرسالة: ${parsed.data.message}`,
-    ].join("\n");
-
     return NextResponse.json({
       ok: true,
-      whatsappUrl: whatsAppLink(clinic.phoneLocal, text),
+      whatsappUrl: whatsAppLink(clinic.phoneLocal, contactMessage(parsed.data)),
     });
   } catch (error) {
     console.error(error);

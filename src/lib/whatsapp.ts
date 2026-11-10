@@ -2,6 +2,30 @@ import { clinic } from "@/lib/clinic";
 import { toWhatsAppNumber } from "@/lib/phone";
 import type { Locale } from "@/lib/types";
 
+/** Forces each Arabic line to stay right-to-left inside WhatsApp. */
+const RLM = "\u200F";
+/** Keeps a phone, reference, or clock time in written order. */
+const LRI = "\u2066";
+/** Keeps an Arabic value from swapping places with the label. */
+const RLI = "\u2067";
+const PDI = "\u2069";
+
+const WEEKDAYS = ["الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"] as const;
+const MONTHS = [
+  "كانون الثاني",
+  "شباط",
+  "آذار",
+  "نيسان",
+  "أيار",
+  "حزيران",
+  "تموز",
+  "آب",
+  "أيلول",
+  "تشرين الأول",
+  "تشرين الثاني",
+  "كانون الأول",
+] as const;
+
 export function whatsAppLink(localOrInternational: string, text: string): string {
   const digits = localOrInternational.replace(/\D/g, "");
   const number = digits.startsWith("962") ? digits : toWhatsAppNumber(digits);
@@ -11,7 +35,7 @@ export function whatsAppLink(localOrInternational: string, text: string): string
 export function clinicInquiryLink(locale: Locale): string {
   const text =
     locale === "ar"
-      ? "السلام عليكم، أرغب بالاستفسار عن موعد في عيادة الدكتورة غالية الزبون."
+      ? rtl("السلام عليكم، أرغب بالاستفسار عن موعد في عيادة الدكتورة غالية الزبون.")
       : "Hello, I would like to ask about an appointment at Dr. Ghalia Alzboun Dental Clinic.";
   return whatsAppLink(clinic.phoneLocal, text);
 }
@@ -21,26 +45,26 @@ type BookingMessageInput = {
   patientName: string;
   phone: string;
   serviceName: string;
-  dateLabel: string;
-  timeLabel: string;
+  date: string;
+  time: string;
   notes: string | null;
 };
 
 /** Arabic message sent to the clinic, regardless of the website language. */
 export function bookingMessage(input: BookingMessageInput): string {
   const lines = [
-    "السلام عليكم، أرغب بحجز موعد في عيادة الدكتورة غالية الزبون.",
+    rtl("السلام عليكم، أرغب بحجز موعد في عيادة الدكتورة غالية الزبون."),
     "",
-    `رقم الطلب: ${input.reference}`,
-    `الاسم: ${input.patientName}`,
-    `الهاتف: ${input.phone}`,
-    `الخدمة: ${input.serviceName}`,
-    `التاريخ: ${input.dateLabel}`,
-    `الوقت: ${input.timeLabel}`,
+    field("رقم الطلب", input.reference),
+    field("الاسم", input.patientName),
+    field("الهاتف", input.phone),
+    field("الخدمة", input.serviceName),
+    field("التاريخ", appointmentDate(input.date)),
+    field("الوقت", input.time),
   ];
 
   if (input.notes) {
-    lines.push(`ملاحظات: ${input.notes}`);
+    lines.push(field("ملاحظات", input.notes));
   }
 
   return lines.join("\n");
@@ -49,33 +73,70 @@ export function bookingMessage(input: BookingMessageInput): string {
 type PatientMessageInput = {
   patientName: string;
   serviceName: string;
-  dateLabel: string;
-  timeLabel: string;
+  date: string;
+  time: string;
 };
 
 export function confirmationMessage(input: PatientMessageInput): string {
   return [
-    `السلام عليكم ${input.patientName}،`,
-    "معكم عيادة الدكتورة غالية الزبون.",
-    "تم تأكيد موعدكم:",
-    `الخدمة: ${input.serviceName}`,
-    `التاريخ: ${input.dateLabel}`,
-    `الوقت: ${input.timeLabel}`,
-    `الموقع: ${clinic.addressAr}`,
-    "نرجو الحضور قبل الموعد بعشر دقائق.",
-    `للاستفسار: ${clinic.phoneDisplay}`,
+    rtl(`السلام عليكم ${isolate(input.patientName)}،`),
+    rtl("معكم عيادة الدكتورة غالية الزبون."),
+    rtl("تم تأكيد موعدكم:"),
+    field("الخدمة", input.serviceName),
+    field("التاريخ", appointmentDate(input.date)),
+    field("الوقت", input.time),
+    field("الموقع", clinic.addressAr),
+    rtl("نرجو الحضور قبل الموعد بعشر دقائق."),
+    field("للاستفسار", clinic.phoneDisplay),
   ].join("\n");
 }
 
 export function cancellationMessage(input: PatientMessageInput): string {
   return [
-    `السلام عليكم ${input.patientName}،`,
-    "معكم عيادة الدكتورة غالية الزبون.",
-    "نعتذر، الموعد التالي لم يعد متاحًا:",
-    `الخدمة: ${input.serviceName}`,
-    `التاريخ: ${input.dateLabel}`,
-    `الوقت: ${input.timeLabel}`,
-    "يمكنكم حجز وقت آخر من موقع العيادة، أو بالرد على هذه الرسالة.",
-    `للاستفسار: ${clinic.phoneDisplay}`,
+    rtl(`السلام عليكم ${isolate(input.patientName)}،`),
+    rtl("معكم عيادة الدكتورة غالية الزبون."),
+    rtl("نعتذر، الموعد التالي لم يعد متاحًا:"),
+    field("الخدمة", input.serviceName),
+    field("التاريخ", appointmentDate(input.date)),
+    field("الوقت", input.time),
+    rtl("يمكنكم حجز وقت آخر من موقع العيادة، أو بالرد على هذه الرسالة."),
+    field("للاستفسار", clinic.phoneDisplay),
   ].join("\n");
+}
+
+export function contactMessage(input: { name: string; phone: string; message: string }): string {
+  return [
+    rtl("السلام عليكم، رسالة من موقع عيادة الدكتورة غالية الزبون."),
+    "",
+    field("الاسم", input.name),
+    field("الهاتف", input.phone),
+    field("الرسالة", input.message),
+  ].join("\n");
+}
+
+export function patientReply(name: string): string {
+  return rtl(`السلام عليكم ${isolate(name)}، معكم عيادة الدكتورة غالية الزبون بخصوص رسالتكم.`);
+}
+
+function rtl(text: string): string {
+  return `${RLM}${text}`;
+}
+
+function field(label: string, value: string): string {
+  return `${RLM}${label}: ${isolate(value)}`;
+}
+
+/** Arabic values stay Arabic. Numbers and Latin text stay in the order they were typed. */
+function isolate(value: string): string {
+  const arabic = /[\u0600-\u06FF]/.test(value);
+  return arabic ? `${RLI}${value}${PDI}` : `${LRI}${value}${PDI}`;
+}
+
+/** Weekday plus an unambiguous day-month-year, without the digits WhatsApp reorders. */
+function appointmentDate(isoDate: string): string {
+  const [year, month, day] = isoDate.split("-").map(Number);
+  const utc = new Date(Date.UTC(year ?? 1970, (month ?? 1) - 1, day ?? 1));
+  const weekday = WEEKDAYS[utc.getUTCDay()] ?? "";
+  const monthName = MONTHS[(month ?? 1) - 1] ?? "";
+  return `${weekday}، ${LRI}${day}${PDI} ${monthName} ${LRI}${year}${PDI}`;
 }

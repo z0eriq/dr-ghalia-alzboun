@@ -62,8 +62,8 @@ export function AppointmentBoard({ appointments }: { appointments: AppointmentDt
         const messageInput = {
           patientName: item.patientName,
           serviceName: item.serviceName,
-          dateLabel: formatDate(item.date, "ar"),
-          timeLabel: formatTime(item.time, "ar"),
+          date: item.date,
+          time: item.time,
         };
         const confirmHref = whatsAppLink(item.phone, confirmationMessage(messageInput));
         const cancelHref = whatsAppLink(item.phone, cancellationMessage(messageInput));
