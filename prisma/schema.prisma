@@ -1,0 +1,58 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Admin {
+  id           String   @id @default(cuid())
+  email        String   @unique @db.VarChar(190)
+  passwordHash String   @db.VarChar(255)
+  name         String   @db.VarChar(120)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Appointment {
+  id          String            @id @default(cuid())
+  reference   String            @unique @db.VarChar(12)
+  patientName String            @db.VarChar(120)
+  phone       String            @db.VarChar(20)
+  serviceSlug String            @db.VarChar(64)
+  serviceName String            @db.VarChar(160)
+  date        String            @db.VarChar(10)
+  time        String            @db.VarChar(5)
+  notes       String?           @db.Text
+  staffNote   String?           @db.Text
+  status      AppointmentStatus @default(PENDING)
+  activeSlot  String            @default("active") @db.VarChar(32)
+  locale      String            @db.VarChar(2)
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  @@unique([date, time, activeSlot])
+  @@index([status, date])
+  @@index([phone])
+}
+
+model ContactMessage {
+  id        String   @id @default(cuid())
+  name      String   @db.VarChar(120)
+  phone     String   @db.VarChar(20)
+  message   String   @db.Text
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([isRead, createdAt])
+}
+
+enum AppointmentStatus {
+  PENDING
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
